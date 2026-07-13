@@ -1,0 +1,67 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "skipLibCheck": true,
+    "types": [
+      "node",
+      "react",
+      "react-dom"
+    ],
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    /* 严格类型检查选项 */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "exactOptionalPropertyTypes": false,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "App.tsx",
+    "index.tsx",
+    "vite-env.d.ts",
+    "components/**/*",
+    "contexts/**/*",
+    "hooks/**/*",
+    "locales/**/*",
+    "pages/**/*",
+    "public/**/*",
+    "scripts/**/*",
+    "services/**/*",
+    "src/**/*",
+    "store/**/*",
+    "types/**/*",
+    "utils/**/*",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "src-tauri/target",
+    "src-tauri/gen",
+    "src-tauri/binaries"
+  ]
+}

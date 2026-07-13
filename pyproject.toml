@@ -1,0 +1,115 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "atri-chat"
+version = "1.0.1"
+description = "澶氳鑹?AI Agent 绯荤粺锛屾敮鎸佸妯″瀷渚涘簲鍟嗐€佽闊宠瘑鍒拰璇煶鍚堟垚"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+authors = [
+    { name = "atri-chat contributors" },
+]
+keywords = ["fastapi", "langchain", "langgraph", "tauri", "vrm", "tts", "asr"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: FastAPI",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "fastapi[standard]",
+    "uvicorn[standard]",
+    "pydantic",
+    "pydantic-settings",
+    "typing-extensions",
+    "langchain",
+    "langgraph",
+    "langgraph-checkpoint-sqlite",
+    "langchain-openai",
+    "langchain-anthropic",
+    "langchain-google-genai",
+    "langchain-ollama",
+    "langchain-deepseek",
+    "langchain-qwq",
+    "langchain-groq",
+    "langchain-mistralai",
+    "langchain-xai",
+    "langchain-cohere",
+    "langchain-fireworks",
+    "langchain-perplexity",
+    "langchain-upstage",
+    "sqlalchemy",
+    "aiosqlite",
+    "httpx",
+    "loguru",
+    "python-multipart",
+    "pyyaml",
+    "python-dotenv",
+    "pypinyin",
+    "psutil",
+    "scipy",
+    "sherpa-onnx",
+    "sherpa-onnx-core",
+    "soundfile",
+    "edge-tts",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "pyinstaller",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[project.urls]
+Homepage = "https://github.com/1sunxiaoshou/atri-chat"
+Repository = "https://github.com/1sunxiaoshou/atri-chat"
+Issues = "https://github.com/1sunxiaoshou/atri-chat/issues"
+
+[dependency-groups]
+dev = [
+    "black",
+    "pyinstaller",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["api*", "core*"]
+exclude = ["data*", "docs*", "examples*", "frontend*", "logs*", "test*", "璁″垝*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "frontend",
+    "data",
+    "logs",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["test"]
+python_files = ["test_*.py"]

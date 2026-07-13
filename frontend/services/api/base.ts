@@ -1,0 +1,294 @@
+import { ApiResponse, ErrorType } from '../../types';
+import { HTTP_STATUS, API_CONFIG } from '../../utils/constants';
+import { Logger, LogCategory } from '../../utils/logger';
+
+/**
+ * 基础 HTTP 客户端类
+ * 封装所有 HTTP 请求，提供统一的错误处理和响应处理
+ */
+export class HttpClient {
+  constructor() {}
+
+  /**
+   * 从响应头中提取链路追踪元数据
+   */
+  private getResponseMeta(response: Response): Pick<ApiResponse<unknown>, 'request_id' | 'process_time'> {
+    return {
+      request_id: response.headers.get('X-Request-ID') || undefined,
+      process_time: response.headers.get('X-Process-Time') || undefined
+    };
+  }
+
+  /**
+   * 构建完整的 URL
+   * @param endpoint - API 端点
+   * @returns 完整的 URL
+   */
+  private buildURL(endpoint: string): string {
+    // 移除端点开头的斜杠（如果存在）
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    return `${API_CONFIG.BASE_URL}/${cleanEndpoint}`;
+  }
+
+  /**
+   * 分类错误类型
+   * @param status - HTTP 状态码
+   * @returns 错误类型
+   */
+  private categorizeError(status: number): ErrorType {
+    const { UNAUTHORIZED, FORBIDDEN, BAD_REQUEST, INTERNAL_SERVER_ERROR } = HTTP_STATUS;
+
+    if (status === 0) {
+      return ErrorType.NETWORK_ERROR;
+    } else if (status === UNAUTHORIZED || status === FORBIDDEN) {
+      return ErrorType.AUTH_ERROR;
+    } else if (status >= BAD_REQUEST && status < INTERNAL_SERVER_ERROR) {
+      return ErrorType.VALIDATION_ERROR;
+    } else if (status >= INTERNAL_SERVER_ERROR) {
+      return ErrorType.SERVER_ERROR;
+    }
+    return ErrorType.UNKNOWN_ERROR;
+  }
+
+  /**
+   * 获取用户友好的错误消息
+   * @param errorType - 错误类型
+   * @param originalMessage - 原始错误消息
+   * @returns 用户友好的错误消息
+   */
+  private getFriendlyErrorMessage(errorType: ErrorType, originalMessage?: string): string {
+    const errorMessages: Record<ErrorType, string> = {
+      [ErrorType.NETWORK_ERROR]: '网络连接失败，请检查您的网络设置',
+      [ErrorType.AUTH_ERROR]: '身份验证失败，请重新登录',
+      [ErrorType.VALIDATION_ERROR]: '请求参数错误，请检查输入内容',
+      [ErrorType.SERVER_ERROR]: '服务器错误，请稍后重试',
+      [ErrorType.UNKNOWN_ERROR]: '未知错误，请稍后重试'
+    };
+
+    return originalMessage || errorMessages[errorType];
+  }
+
+  /**
+   * 处理 API 响应
+   * @param response - 原始响应对象
+   * @returns 统一格式的 API 响应
+   */
+  private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
+    const responseMeta = this.getResponseMeta(response);
+
+    if (!response.ok) {
+      const errorType = this.categorizeError(response.status);
+      const errorText = await response.text();
+
+      let errorMessage = '请求失败';
+      let errorDetails: any = null;
+
+      try {
+        const errorJson = JSON.parse(errorText);
+
+        // 处理 FastAPI 422 验证错误（detail 是数组）
+        if (Array.isArray(errorJson.detail)) {
+          const errors = errorJson.detail.map((err: any) => {
+            const field = err.loc?.join('.') || 'unknown';
+            return `${field}: ${err.msg}`;
+          }).join('; ');
+          errorMessage = `验证错误: ${errors}`;
+        } else if (typeof errorJson.detail === 'object' && errorJson.detail !== null) {
+          // detail 是对象（如 409 冲突错误）
+          errorMessage = errorJson.detail.message || errorJson.message || errorMessage;
+          errorDetails = errorJson.detail;
+        } else {
+          // detail 是字符串或其他类型
+          errorMessage = errorJson.detail || errorJson.message || errorMessage;
+          errorDetails = errorJson;
+        }
+
+        // 如果还没有设置 errorDetails，使用完整的 errorJson
+        if (!errorDetails) {
+          errorDetails = errorJson;
+        }
+      } catch {
+        errorMessage = errorText || errorMessage;
+      }
+
+      // 记录错误日志
+      Logger.error(`API 请求失败: ${response.url}`, new Error(errorMessage), {
+        status: response.status,
+        errorType,
+        request_id: responseMeta.request_id,
+        process_time: responseMeta.process_time,
+        details: errorDetails
+      }, LogCategory.API);
+
+      return {
+        code: response.status,
+        message: errorMessage,
+        data: errorDetails as T,
+        ...responseMeta
+      };
+    }
+
+    const jsonData = await response.json();
+    Logger.debug('API 响应成功', {
+      url: response.url,
+      status: response.status,
+      request_id: responseMeta.request_id,
+      process_time: responseMeta.process_time
+    }, LogCategory.API);
+    return {
+      ...jsonData,
+      ...responseMeta
+    };
+  }
+
+  /**
+   * 通用请求方法
+   * @param endpoint - API 端点
+   * @param options - 请求选项
+   * @returns API 响应
+   */
+  async request<T>(
+    endpoint: string,
+    options?: RequestInit
+  ): Promise<ApiResponse<T>> {
+    try {
+      const url = this.buildURL(endpoint);
+      const response = await fetch(url, options);
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      // 网络错误或其他异常
+      const errorMessage = error instanceof Error ? error.message : '网络请求失败';
+      const errorType = ErrorType.NETWORK_ERROR;
+      const friendlyMessage = this.getFriendlyErrorMessage(errorType, errorMessage);
+
+      // 记录错误日志
+      Logger.error(`网络请求异常: ${endpoint}`, error instanceof Error ? error : new Error(errorMessage), {
+        endpoint,
+        errorType
+      }, LogCategory.NETWORK);
+
+      return {
+        code: 0,
+        message: friendlyMessage,
+        data: {} as T,
+        request_id: undefined,
+        process_time: undefined
+      };
+    }
+  }
+
+  /**
+   * GET 请求
+   * @param endpoint - API 端点
+   * @returns API 响应
+   */
+  async get<T>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'GET'
+    });
+  }
+
+  /**
+   * POST 请求
+   * @param endpoint - API 端点
+   * @param data - 请求数据
+   * @param options - 额外的请求选项
+   * @returns API 响应
+   */
+  async post<T>(
+    endpoint: string,
+    data?: any,
+    options?: RequestInit
+  ): Promise<ApiResponse<T>> {
+    const isFormData = data instanceof FormData;
+
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+      body: isFormData ? data : JSON.stringify(data),
+      ...options
+    });
+  }
+
+  /**
+   * PUT 请求
+   * @param endpoint - API 端点
+   * @param data - 请求数据
+   * @returns API 响应
+   */
+  async put<T>(
+    endpoint: string,
+    data?: any
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  }
+
+  /**
+   * PATCH 请求
+   * @param endpoint - API 端点
+   * @param data - 请求数据
+   * @returns API 响应
+   */
+  async patch<T>(
+    endpoint: string,
+    data?: any
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  }
+
+  /**
+   * DELETE 请求
+   * @param endpoint - API 端点
+   * @returns API 响应
+   */
+  async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'DELETE'
+    });
+  }
+}
+
+/**
+ * 创建 HTTP 客户端实例
+ */
+export const httpClient = new HttpClient();
+
+/**
+ * 获取基础 URL（用于需要直接使用 fetch 的特殊场景）
+ * @returns 基础 URL
+ */
+export const getBaseURL = (): string => API_CONFIG.BASE_URL;
+
+/**
+ * 获取上传基础 URL
+ * @returns 上传基础 URL
+ */
+export const getUploadBaseURL = (): string => API_CONFIG.UPLOAD_URL;
+
+/**
+ * 构建完整的 API URL（用于需要直接使用 fetch 的特殊场景）
+ * @param endpoint - API 端点
+ * @returns 完整的 URL
+ */
+export const buildURL = (endpoint: string): string => {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  return `${API_CONFIG.BASE_URL}/${cleanEndpoint}`;
+};
+
+/**
+ * 构建完整的上传 URL
+ * @param endpoint - 上传端点（如 'avatar', 'vrm-model'）
+ * @returns 完整的上传 URL
+ */
+export const buildUploadURL = (endpoint: string): string => {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  return `${API_CONFIG.UPLOAD_URL}/${cleanEndpoint}`;
+};
