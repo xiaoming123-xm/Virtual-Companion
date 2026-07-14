@@ -6,6 +6,7 @@ interface BootstrapGateProps {
 }
 
 const HEALTH_ENDPOINT = '/health';
+const APP_NAME = 'ATRI Chat';
 const MAX_HEALTH_CHECK_ATTEMPTS = 80;
 const HEALTH_CHECK_INTERVAL_MS = 250;
 
@@ -79,7 +80,7 @@ export function BootstrapGate({ children }: BootstrapGateProps) {
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-cyan-950/30 backdrop-blur">
         <div className="mb-6 flex items-center gap-3">
           <div className="h-3 w-3 rounded-full bg-cyan-400 shadow-[0_0_18px_rgba(34,211,238,0.8)]" />
-          <span className="text-xs uppercase tracking-[0.35em] text-cyan-200/80">ATRI Chat</span>
+          <span className="text-xs uppercase tracking-[0.35em] text-cyan-200/80">{APP_NAME}</span>
         </div>
 
         <h1 className="text-2xl font-semibold tracking-tight">

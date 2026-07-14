@@ -9,7 +9,7 @@ router = APIRouter()
 
 @router.get("/backgrounds", response_model=ResponseModel)
 async def get_backgrounds():
-    backgrounds = [item.__dict__ for item in list_backgrounds()]
+    backgrounds = [item.to_dict() for item in list_backgrounds()]
     return {
         "code": 200,
         "message": "success",

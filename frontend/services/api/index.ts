@@ -15,6 +15,7 @@ import { ttsApi } from './tts';
 import { avatarsApi } from './avatars';
 import { voiceAssetsApi } from './voiceAssets';
 import { motionsApi, motionBindingsApi } from './motions';
+import { backgroundsApi } from './backgrounds';
 
 export {
   httpClient,
@@ -35,6 +36,7 @@ export { ttsApi } from './tts';
 export { avatarsApi } from './avatars';
 export { voiceAssetsApi } from './voiceAssets';
 export { motionsApi, motionBindingsApi } from './motions';
+export { backgroundsApi, type BackgroundImage } from './backgrounds';
 
 /**
  * 向后兼容的 API 对象
@@ -105,6 +107,10 @@ export const api = {
   getCharacterMotionBindings: motionBindingsApi.getCharacterBindings,
   updateCharacterMotionBindings: motionBindingsApi.updateCharacterBindings,
   deleteCharacterMotionBindings: motionBindingsApi.deleteCharacterBindings,
+
+  // Background API
+  getBackgrounds: backgroundsApi.getBackgrounds,
+  uploadBackground: backgroundsApi.uploadBackground,
 
   // VRM API
   getVRMModels: vrmApi.getVRMModels,

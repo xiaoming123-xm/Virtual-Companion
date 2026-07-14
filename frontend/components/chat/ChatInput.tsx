@@ -11,11 +11,13 @@ import { cn } from '../../utils/cn';
 interface ChatInputProps {
   onSend: (message: string) => void;
   isTyping: boolean;
+  autoSendTranscription?: boolean;
 }
 
 const ChatInput: React.FC<ChatInputProps> = React.memo(({
   onSend,
-  isTyping
+  isTyping,
+  autoSendTranscription = false
 }) => {
   const { t } = useLanguage();
   const { inputValue, setInputValue, clearInput } = useChatStore();
@@ -49,11 +51,16 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({
   // 当转录文本更新时，添加到输入框
   React.useEffect(() => {
     if (transcribedText) {
-      setInputValue(inputValue + (inputValue ? ' ' : '') + transcribedText);
+      const message = transcribedText.trim();
+      if (autoSendTranscription && message && !isTyping) {
+        onSend(message);
+      } else {
+        setInputValue(inputValue + (inputValue ? ' ' : '') + transcribedText);
+      }
       clearTranscribedText();
       setTimeout(() => setToastMessage(null), 3000);
     }
-  }, [transcribedText, inputValue, setInputValue, clearTranscribedText]);
+  }, [transcribedText, inputValue, autoSendTranscription, isTyping, onSend, setInputValue, clearTranscribedText]);
 
   // 处理 ASR 错误
   React.useEffect(() => {
@@ -141,7 +148,7 @@ const ChatInput: React.FC<ChatInputProps> = React.memo(({
                 variant="ghost"
                 size="icon"
                 onClick={toggleRecording}
-                disabled={isProcessing}
+                disabled={isProcessing || isTyping}
                 className={cn(
                   "h-9 w-9",
                   isRecording && "text-destructive bg-destructive/10 animate-pulse",

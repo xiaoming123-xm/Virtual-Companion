@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import BinaryIO
 
@@ -14,7 +14,8 @@ BACKGROUND_DIR = Path(__file__).resolve().parents[2] / "frontend" / "public" / "
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
-TARGET_SIZE = (1920, 1080)
+TARGET_WIDTH = 1920
+TARGET_HEIGHT = 1080
 
 
 @dataclass(frozen=True)
@@ -22,13 +23,16 @@ class BackgroundImage:
     filename: str
     display_name: str
 
+    def to_dict(self) -> dict[str, str]:
+        return asdict(self)
+
 
 def list_backgrounds() -> list[BackgroundImage]:
     BACKGROUND_DIR.mkdir(parents=True, exist_ok=True)
     files = [
         BackgroundImage(filename=path.name, display_name=path.stem)
         for path in BACKGROUND_DIR.iterdir()
-        if path.is_file() and path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}
+        if path.is_file() and path.suffix.lower() in ALLOWED_EXTENSIONS
     ]
     return sorted(files, key=lambda item: item.filename.lower())
 
@@ -84,29 +88,34 @@ def build_output_filename(original_filename: str) -> str:
     return f"{safe_stem}_{uuid.uuid4().hex[:8]}.jpg"
 
 
-def crop_to_16_9(image_file: BinaryIO, output_path: Path, target_w: int = 1920, target_h: int = 1080) -> None:
+def crop_to_16_9(
+    image_file: BinaryIO,
+    output_path: Path,
+    target_w: int = TARGET_WIDTH,
+    target_h: int = TARGET_HEIGHT,
+) -> None:
     with Image.open(image_file) as source:
         img = ImageOps.exif_transpose(source)
-        w, h = img.size
-        if w <= 0 or h <= 0:
+        width, height = img.size
+        if width <= 0 or height <= 0:
             raise HTTPException(status_code=400, detail="图片尺寸无效")
 
         target_ratio = target_w / target_h
-        current_ratio = w / h
+        current_ratio = width / height
 
         if current_ratio > target_ratio:
-            new_w = int(h * target_ratio)
-            left = (w - new_w) // 2
-            img = img.crop((left, 0, left + new_w, h))
+            new_width = int(height * target_ratio)
+            left = (width - new_width) // 2
+            img = img.crop((left, 0, left + new_width, height))
         else:
-            new_h = int(w / target_ratio)
-            top = (h - new_h) // 2
-            img = img.crop((0, top, w, top + new_h))
+            new_height = int(width / target_ratio)
+            top = (height - new_height) // 2
+            img = img.crop((0, top, width, top + new_height))
 
-        if img.mode not in ("RGB", "L"):
-            background = Image.new("RGB", img.size, (255, 255, 255))
-            alpha = img.getchannel("A") if "A" in img.getbands() else None
-            background.paste(img.convert("RGBA"), mask=alpha)
+        if img.mode in ("RGBA", "LA") or "transparency" in img.info:
+            rgba = img.convert("RGBA")
+            background = Image.new("RGB", rgba.size, (255, 255, 255))
+            background.paste(rgba, mask=rgba.getchannel("A"))
             img = background
         else:
             img = img.convert("RGB")

@@ -321,7 +321,12 @@
             "none": "No Background",
             "aronaRoomOut": "Arona Room (Out)",
             "aronaRoomIn": "Arona Room (In)",
-            "gameDevRoom": "Game Dev Room"
+            "gameDevRoom": "Game Dev Room",
+            "addImage": "Add Image",
+            "uploading": "Processing...",
+            "loadFailed": "Failed to load backgrounds",
+            "uploadFailed": "Failed to upload background",
+            "invalidFile": "Please select a JPG, PNG, or WebP image"
         },
         "advancedSettings": "Advanced Rendering",
         "enableBlink": "Auto Blink",

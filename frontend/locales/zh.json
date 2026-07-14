@@ -321,7 +321,12 @@
             "none": "无背景",
             "aronaRoomOut": "Arona 房间（外景）",
             "aronaRoomIn": "Arona 房间（内景）",
-            "gameDevRoom": "游戏开发部"
+            "gameDevRoom": "游戏开发部",
+            "addImage": "添加图片",
+            "uploading": "处理中...",
+            "loadFailed": "背景列表加载失败",
+            "uploadFailed": "背景上传失败",
+            "invalidFile": "请选择 JPG、PNG 或 WebP 图片"
         },
         "advancedSettings": "高级渲染",
         "enableBlink": "自动眨眼",

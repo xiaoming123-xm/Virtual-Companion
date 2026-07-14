@@ -142,12 +142,14 @@ app.mount("/static", StaticFiles(directory=str(settings.assets_dir)), name="stat
 # 注册 API 路由
 from api.routes import (
     characters, conversations, messages, models, providers, tts, health, upload, asr,
-    avatars, motions, tts_providers, voice_assets, character_motion_bindings_v2, asr_mgmt
+    avatars, motions, tts_providers, voice_assets, character_motion_bindings_v2, asr_mgmt,
+    backgrounds,
 )
 
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(avatars.router, prefix="/api/v1", tags=["assets"])
 app.include_router(motions.router, prefix="/api/v1", tags=["assets"])
+app.include_router(backgrounds.router, prefix="/api/v1", tags=["backgrounds"])
 app.include_router(tts_providers.router, prefix="/api/v1", tags=["tts"])
 app.include_router(voice_assets.router, prefix="/api/v1", tags=["tts"])
 app.include_router(tts.router, prefix="/api/v1/tts", tags=["tts"])

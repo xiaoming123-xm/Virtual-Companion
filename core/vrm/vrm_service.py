@@ -80,6 +80,7 @@ class VRMService:
             provider_type=tts_provider.provider_type,
             config=config
         )
+        audio_mime_type = tts.get_audio_mime_type()
         
         logger.info(
             "开始 VRM 流式生成",
@@ -131,11 +132,10 @@ class VRMService:
             yield {
                 "sentence_index": index,      # 使用前端期望的字段名
                 "marked_text": sentence,      # 带标记的原文
-                "audio_url": f"data:audio/wav;base64,{audio_data}" if audio_data else None  # 直接返回 data URI
+                "audio_url": f"data:{audio_mime_type};base64,{audio_data}" if audio_data else None  # 直接返回 data URI
             }
         
         logger.info(
             "VRM 流式生成完成",
             extra={"total_sentences": len(sentences)}
         )
-

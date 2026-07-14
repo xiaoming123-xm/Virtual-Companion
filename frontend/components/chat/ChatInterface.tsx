@@ -329,6 +329,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <ChatInput
         onSend={handleSend}
         isTyping={isTyping}
+        autoSendTranscription={vrmDisplayMode === 'vrm'}
       />
     </div>
   );

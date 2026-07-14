@@ -48,6 +48,7 @@ dependencies = [
     "httpx",
     "loguru",
     "python-multipart",
+    "Pillow",
     "pyyaml",
     "python-dotenv",
     "pypinyin",

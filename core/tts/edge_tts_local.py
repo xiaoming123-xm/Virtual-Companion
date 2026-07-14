@@ -33,9 +33,23 @@ class EdgeTTS(TTSBase):
         "ko-KR-SunHiNeural",
     ]
 
-    RATE_OPTIONS = ["-50%", "-25%", "0%", "+25%", "+50%"]
-    VOLUME_OPTIONS = ["-50%", "-25%", "0%", "+25%", "+50%"]
-    PITCH_OPTIONS = ["-20Hz", "-10Hz", "0Hz", "+10Hz", "+20Hz"]
+    RATE_OPTIONS = ["-50%", "-25%", "+0%", "+25%", "+50%"]
+    VOLUME_OPTIONS = ["-50%", "-25%", "+0%", "+25%", "+50%"]
+    PITCH_OPTIONS = ["-20Hz", "-10Hz", "+0Hz", "+10Hz", "+20Hz"]
+
+    @staticmethod
+    def _normalize_percent(value: Any, default: str = "+0%") -> Optional[str]:
+        text = str(value or default).strip()
+        if text in {"0%", "+0%"}:
+            return None
+        return text
+
+    @staticmethod
+    def _normalize_pitch(value: Any, default: str = "+0Hz") -> Optional[str]:
+        text = str(value or default).strip()
+        if text in {"0Hz", "+0Hz"}:
+            return None
+        return text
 
     @classmethod
     def get_config_template(cls) -> Dict[str, Any]:
@@ -53,7 +67,7 @@ class EdgeTTS(TTSBase):
                 "type": "select",
                 "label": "Rate",
                 "description": "Speech speed",
-                "default": "0%",
+                "default": "+0%",
                 "required": True,
                 "options": cls.RATE_OPTIONS,
                 "level": "voice",
@@ -62,7 +76,7 @@ class EdgeTTS(TTSBase):
                 "type": "select",
                 "label": "Volume",
                 "description": "Output volume",
-                "default": "0%",
+                "default": "+0%",
                 "required": True,
                 "options": cls.VOLUME_OPTIONS,
                 "level": "voice",
@@ -71,7 +85,7 @@ class EdgeTTS(TTSBase):
                 "type": "select",
                 "label": "Pitch",
                 "description": "Output pitch",
-                "default": "0Hz",
+                "default": "+0Hz",
                 "required": True,
                 "options": cls.PITCH_OPTIONS,
                 "level": "voice",
@@ -80,18 +94,24 @@ class EdgeTTS(TTSBase):
 
     def __init__(self, config: dict):
         self.voice = config.get("voice", "zh-CN-XiaoxiaoNeural")
-        self.rate = str(config.get("rate", "0%"))
-        self.volume = str(config.get("volume", "0%"))
-        self.pitch = str(config.get("pitch", "0Hz"))
+        self.rate = self._normalize_percent(config.get("rate", "+0%"))
+        self.volume = self._normalize_percent(config.get("volume", "+0%"))
+        self.pitch = self._normalize_pitch(config.get("pitch", "+0Hz"))
         self.sample_rate = 24000
 
     def _communicate(self, text: str) -> edge_tts.Communicate:
+        options: Dict[str, str] = {}
+        if self.rate is not None:
+            options["rate"] = self.rate
+        if self.volume is not None:
+            options["volume"] = self.volume
+        if self.pitch is not None:
+            options["pitch"] = self.pitch
+
         return edge_tts.Communicate(
             text=text,
             voice=self.voice,
-            rate=self.rate,
-            volume=self.volume,
-            pitch=self.pitch,
+            **options,
         )
 
     async def synthesize_async(self, text: str, language: Optional[str] = None) -> bytes:
