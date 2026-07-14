@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**轻量、私有、可定制的 3D AI 桌面伴侣**
+**轻量、私有、可定制的 3D AI 桌面陪伴伙伴**
 
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
